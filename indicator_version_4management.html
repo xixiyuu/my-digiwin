@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>发布版本管理</title>
+    <style>
+        :root {
+            --brand-blue: #5d5bd4;
+            --sidebar-width: 200px;
+            --top-navbar-height: 50px;
+            --bg-color: #f4f7f9;
+            --text-color-dark: #333;
+            --text-color-light: #fff;
+            --border-color: #e0e0e0;
+            --diff-added-bg: #e6ffed;
+            --diff-added-text: #28a745;
+            --diff-removed-bg: #ffeef0;
+            --diff-removed-text: #d73a49;
+            --diff-modified-bg: #fffbdd;
+            --diff-modified-text: #e2b101;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color-dark);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: #fff;
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: var(--brand-blue);
+            font-size: 16px;
+        }
+
+        .sidebar-nav {
+            flex-grow: 1;
+            padding: 10px 0;
+        }
+
+        .nav-item {
+            padding: 10px 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .nav-item.active {
+            background-color: #f0f0ff;
+            color: var(--brand-blue);
+            border-right: 3px solid var(--brand-blue);
+        }
+
+        .nav-item:hover {
+            background-color: #f9f9f9;
+        }
+
+        /* Main Content */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .top-navbar {
+            height: var(--top-navbar-height);
+            background-color: #fff;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .content-area {
+            flex-grow: 1;
+            padding: 20px;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .breadcrumb {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 15px;
+        }
+
+        /* Version List Table */
+        .page-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .search-box {
+            display: flex;
+            align-items: center;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 5px 10px;
+            width: 300px;
+        }
+
+        .search-box input {
+            border: none;
+            outline: none;
+            flex-grow: 1;
+            padding: 2px 5px;
+        }
+
+        .button {
+            padding: 6px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            background: #fff;
+        }
+
+        .button.primary {
+            background-color: var(--brand-blue);
+            color: #fff;
+            border-color: var(--brand-blue);
+        }
+
+        .table-container {
+            background: #fff;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #fafafa;
+            color: #666;
+            font-weight: 500;
+        }
+
+        .tag-online {
+            background: #e6ffed;
+            color: #28a745;
+            padding: 2px 6px;
+            border-radius: 2px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .link-action {
+            color: var(--brand-blue);
+            cursor: pointer;
+            text-decoration: none;
+        }
+
+        /* Snapshot View */
+        .snapshot-view {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .snapshot-info-bar {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            display: flex;
+            gap: 40px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+        }
+
+        .snapshot-info-bar span {
+            color: #666;
+        }
+
+        .snapshot-info-bar b {
+            color: #333;
+            margin-left: 8px;
+            font-size: 18px;
+        }
+
+        .snapshot-content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            padding-left: 10px;
+            border-left: 4px solid var(--brand-blue);
+        }
+
+        .info-row {
+            display: flex;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .info-label {
+            width: 100px;
+            color: #999;
+            flex-shrink: 0;
+        }
+
+        .info-value {
+            color: #333;
+        }
+
+        /* Version Compare (DingTalk Style) */
+        .compare-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #fff;
+            z-index: 1000;
+            display: none;
+            flex-direction: column;
+        }
+
+        .compare-header {
+            height: 60px;
+            padding: 0 20px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .compare-tools {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .compare-body {
+            flex-grow: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        .compare-pane {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .pane-header {
+            padding: 10px 20px;
+            background: #f9f9f9;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .pane-content {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        .diff-added { background-color: var(--diff-added-bg); color: var(--diff-added-text); padding: 2px 4px; border-radius: 2px; }
+        .diff-removed { background-color: var(--diff-removed-bg); color: var(--diff-removed-text); padding: 2px 4px; border-radius: 2px; text-decoration: line-through; }
+        .diff-modified { background-color: var(--diff-modified-bg); color: var(--diff-modified-text); padding: 2px 4px; border-radius: 2px; }
+
+        .diff-legend {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 5px; }
+        .dot { width: 10px; height: 10px; border-radius: 2px; }
+
+        .btn-exit {
+            background-color: var(--brand-blue);
+            color: #fff;
+            border: none;
+            height: 32px;
+            padding: 0 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-restore {
+            background-color: #fff;
+            color: var(--brand-blue);
+            border: 1px solid var(--brand-blue);
+            height: 32px;
+            padding: 0 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-left: 10px;
+        }
+
+        .diff-nav {
+            display: flex;
+            align-items: center;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            overflow: hidden;
+            height: 32px;
+        }
+
+        .diff-nav button {
+            height: 100%;
+            padding: 0 15px;
+            border: none;
+            background: #fff;
+            cursor: pointer;
+            border-right: 1px solid var(--border-color);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Restore Confirmation Popover */
+        .restore-popover {
+            position: absolute;
+            background: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            padding: 12px;
+            z-index: 1100;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            width: 180px;
+            top: 50px; /* Adjusted later by JS */
+        }
+
+        .restore-popover::before {
+            content: "";
+            position: absolute;
+            top: -6px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-left: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .popover-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 8px;
+        }
+
+        .popover-btn {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            border: 1px solid var(--border-color);
+            background: #fff;
+        }
+
+        .popover-btn.confirm {
+            background-color: var(--brand-blue);
+            color: #fff;
+            border-color: var(--brand-blue);
+        }
+
+        .diff-nav button:last-child { border-right: none; }
+        .diff-count { padding: 0 10px; font-size: 12px; color: #666; }
+
+        select.version-select {
+            padding: 4px 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            outline: none;
+        }
+
+    </style>
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">鼎捷雅典娜 | 决策智能 v1.1.0</div>
+        <div class="sidebar-nav">
+            <div class="nav-item">首页</div>
+            <div class="nav-item">洞察中心</div>
+            <div class="nav-item">决策分析</div>
+            <div class="nav-item">指标中心</div>
+            <div class="nav-item" style="padding-left: 40px;">指标目录</div>
+            <div class="nav-item" style="padding-left: 40px;">指标洞察</div>
+            <div class="nav-item active" style="padding-left: 40px;">指标管理</div>
+            <div class="nav-item">审批中心</div>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <div class="top-navbar">
+            <div></div>
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <span style="font-size: 14px; color: #666;">雅典娜数智精案01</span>
+                <span style="font-size: 14px; font-weight: bold;">王少航</span>
+            </div>
+        </div>
+
+        <div class="content-area" id="mainContent">
+            <!-- List View -->
+            <div id="listView">
+                <div class="breadcrumb">指标管理 > 发布版本</div>
+                <div class="page-header">
+                    <div class="search-box">
+                        <input type="text" placeholder="请搜索关键词">
+                        <span>🔍</span>
+                    </div>
+                    <div style="margin-left: 10px;">
+                        <select class="button" style="padding: 6px 10px; color: #999;">
+                            <option>请选择版本号</option>
+                        </select>
+                    </div>
+                    <button class="button" id="btnCompare" style="margin-left: auto;">版本对比</button>
+                </div>
+
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>版本号</th>
+                                <th>发布人</th>
+                                <th>发布时间</th>
+                                <th>版本快照</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>V3 <span class="tag-online">线上版本</span></td>
+                                <td>王文娟</td>
+                                <td>2026.03.30 17:29:05</td>
+                                <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                            </tr>
+                            <tr>
+                                <td>V2</td>
+                                <td>王文娟</td>
+                                <td>2026.03.30 10:59:26</td>
+                                <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                            </tr>
+                            <tr>
+                                <td>V1</td>
+                                <td>王文娟</td>
+                                <td>2026.03.30 10:58:28</td>
+                                <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Snapshot View -->
+            <div id="snapshotView" class="snapshot-view">
+                <div class="breadcrumb">指标管理 > 发布版本 > 指标快照</div>
+                <div class="snapshot-info-bar">
+                    <div><span>发布人:</span><b>王文娟</b></div>
+                    <div style="border-left: 1px solid #eee; padding-left: 40px;"><span>发布时间:</span><b>2026-03-30 17:29:05</b></div>
+                    <div style="border-left: 1px solid #eee; padding-left: 40px;"><span>发布版本号:</span><b>授信金额月环比 V3</b></div>
+                </div>
+
+                <div class="snapshot-content-grid">
+                    <!-- 基本定义 -->
+                    <div class="card">
+                        <div class="card-title">基本定义</div>
+                        <div class="info-row"><div class="info-label">指标名称:</div><div class="info-value">授信金额月同比</div></div>
+                        <div class="info-row"><div class="info-label">指标ID:</div><div class="info-value">授信金额月环比</div></div>
+                        <div class="info-row"><div class="info-label">指标版本:</div><div class="info-value">授信金额月环比 V3</div></div>
+                        <div class="info-row"><div class="info-label">指标目录:</div><div class="info-value">融资业务 / 授信</div></div>
+                        <div class="info-row"><div class="info-label">业务所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">技术所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">指标类型:</div><div class="info-value">衍生指标</div></div>
+                        <div class="info-row"><div class="info-label">业务口径:</div><div class="info-value">授信金额月同比</div></div>
+                        <div class="info-row"><div class="info-label">最新变更人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">创建人:</div><div class="info-value">王文娟</div></div>
+                    </div>
+
+                    <!-- 计算逻辑 -->
+                    <div class="card">
+                        <div class="card-title">计算逻辑</div>
+                        <div class="info-row"><div class="info-label">衍生自:</div><div class="info-value">授信金额</div></div>
+                        <div class="info-row"><div class="info-label">衍生计算:</div><div class="info-value">同比</div><div style="margin-left: auto;" class="link-action">查看</div></div>
+                        <div class="info-row"><div class="info-label">衍生配置:</div><div class="info-value">年同比-按月</div></div>
+                        <div class="info-row"><div class="info-label">度量:</div><div class="info-value">百分比</div><div style="margin-left: auto;" class="link-action">查看</div></div>
+                        <div class="info-row">
+                            <div class="info-label">维度:</div>
+                            <div class="info-value">
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">客户(文本)</span>
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">授信开始时间(时间)</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">筛选:</div>
+                            <div style="flex-grow: 1;">
+                                <table style="font-size: 12px;">
+                                    <thead><tr><th>维度名</th><th>数据类型</th><th>筛选值</th></tr></thead>
+                                    <tbody><tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="info-row"><div class="info-label">时间:</div><div class="info-value">授信开始时间(时间)</div></div>
+                    </div>
+                </div>
+                <div style="text-align: center; margin-top: 20px;">
+                    <button class="button primary" onclick="backToList()">返回列表</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Version Compare Overlay -->
+    <div class="compare-overlay" id="compareOverlay">
+        <div class="compare-header">
+            <!-- Left: Current Version Selection -->
+            <div style="display: flex; align-items: center; gap: 10px; width: 250px;">
+                <span style="font-size: 14px; color: #333;">当前版本:</span>
+                <select class="version-select" style="width: 150px;">
+                    <option>授信金额月环比 V3</option>
+                    <option>授信金额月环比 V2</option>
+                    <option>授信金额月环比 V1</option>
+                </select>
+            </div>
+
+            <!-- Mid-Left: Difference Navigation (Before Midline) -->
+            <div style="display: flex; justify-content: flex-end; flex: 1; padding-right: 20px;">
+                <div class="diff-nav">
+                    <button>上一处差异</button>
+                    <span class="diff-count">0/2</span>
+                    <button>下一处差异</button>
+                </div>
+            </div>
+
+            <!-- Mid-Right: Compare Version Selection (At Midline) -->
+            <div style="display: flex; align-items: center; gap: 10px; flex: 1; padding-left: 20px; position: relative;">
+                <span style="font-size: 14px; color: #333;">对比版本:</span>
+                <select class="version-select" style="width: 80px;">
+                    <option>V1</option>
+                    <option>V2</option>
+                </select>
+                <button class="btn-restore" id="btnRestore">恢复版本</button>
+                
+                <!-- Restore Popover -->
+                <div class="restore-popover" id="restorePopover">
+                    <div style="font-size: 14px; color: #333;">确认要恢复吗？</div>
+                    <div class="popover-buttons">
+                        <button class="popover-btn" id="btnCancelRestore">取消</button>
+                        <button class="popover-btn confirm" id="btnConfirmRestore">确认</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Legend and Exit -->
+            <div class="compare-tools" style="flex: 1; justify-content: flex-end;">
+                <div class="diff-legend">
+                    <div class="legend-item"><span class="dot" style="background: var(--diff-added-bg);"></span> 增加(0)</div>
+                    <div class="legend-item"><span class="dot" style="background: var(--diff-removed-bg);"></span> 删除(0)</div>
+                    <div class="legend-item"><span class="dot" style="background: var(--diff-modified-bg);"></span> 修改(3)</div>
+                </div>
+                <button class="btn-exit" onclick="exitCompare()">退出对比</button>
+            </div>
+        </div>
+        <div class="compare-body">
+            <!-- Left Pane: Current Version -->
+            <div class="compare-pane">
+                <div class="pane-content">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-title">基本定义</div>
+                        <div class="info-row"><div class="info-label">指标名称:</div><div class="info-value">授信金额<span class="diff-modified">月同比</span></div></div>
+                        <div class="info-row"><div class="info-label">指标ID:</div><div class="info-value">授信金额月环比</div></div>
+                        <div class="info-row"><div class="info-label">指标版本:</div><div class="info-value">授信金额月环比 V3</div></div>
+                        <div class="info-row"><div class="info-label">指标目录:</div><div class="info-value">融资业务 / 授信</div></div>
+                        <div class="info-row"><div class="info-label">指标标签:</div><div class="info-value">-</div></div>
+                        <div class="info-row"><div class="info-label">业务所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">技术所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">指标类型:</div><div class="info-value">衍生指标</div></div>
+                        <div class="info-row"><div class="info-label">业务口径:</div><div class="info-value">授信金额<span class="diff-modified">月同比</span></div></div>
+                        <div class="info-row"><div class="info-label">最新变更人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">创建人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">最新变更时间:</div><div class="info-value">2026.03.30 17:28:59</div></div>
+                        <div class="info-row"><div class="info-label">创建时间:</div><div class="info-value">2026.03.30 10:56:24</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">计算逻辑</div>
+                        <div class="info-row"><div class="info-label">衍生自:</div><div class="info-value">授信金额</div></div>
+                        <div class="info-row"><div class="info-label">衍生计算:</div><div class="info-value">同比</div></div>
+                        <div class="info-row"><div class="info-label">衍生配置:</div><div class="info-value">年同比-按月</div></div>
+                        <div class="info-row"><div class="info-label">度量:</div><div class="info-value"><span class="diff-modified">百分比</span></div></div>
+                        <div class="info-row">
+                            <div class="info-label">维度:</div>
+                            <div class="info-value">
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">客户(文本)</span>
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">授信开始时间(时间)</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">筛选:</div>
+                            <div style="flex-grow: 1;">
+                                <table style="font-size: 12px;">
+                                    <thead><tr><th>维度名</th><th>数据类型</th><th>筛选值</th></tr></thead>
+                                    <tbody><tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="info-row"><div class="info-label">时间:</div><div class="info-value">授信开始时间(时间)</div></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Right Pane: Compare Version -->
+            <div class="compare-pane">
+                <div class="pane-content">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div class="card-title">基本定义</div>
+                        <div class="info-row"><div class="info-label">指标名称:</div><div class="info-value">授信金额<span class="diff-modified">月环比</span></div></div>
+                        <div class="info-row"><div class="info-label">指标ID:</div><div class="info-value">授信金额月环比</div></div>
+                        <div class="info-row"><div class="info-label">指标版本:</div><div class="info-value">授信金额月环比 V2</div></div>
+                        <div class="info-row"><div class="info-label">指标目录:</div><div class="info-value">融资业务 / 授信</div></div>
+                        <div class="info-row"><div class="info-label">指标标签:</div><div class="info-value">-</div></div>
+                        <div class="info-row"><div class="info-label">业务所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">技术所有人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">指标类型:</div><div class="info-value">衍生指标</div></div>
+                        <div class="info-row"><div class="info-label">业务口径:</div><div class="info-value">授信金额<span class="diff-modified">月环比</span></div></div>
+                        <div class="info-row"><div class="info-label">最新变更人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">创建人:</div><div class="info-value">王文娟</div></div>
+                        <div class="info-row"><div class="info-label">最新变更时间:</div><div class="info-value">2026.03.30 10:59:26</div></div>
+                        <div class="info-row"><div class="info-label">创建时间:</div><div class="info-value">2026.03.30 10:56:24</div></div>
+                    </div>
+                    <div class="card">
+                        <div class="card-title">计算逻辑</div>
+                        <div class="info-row"><div class="info-label">衍生自:</div><div class="info-value">授信金额</div></div>
+                        <div class="info-row"><div class="info-label">衍生计算:</div><div class="info-value">同比</div></div>
+                        <div class="info-row"><div class="info-label">衍生配置:</div><div class="info-value">年同比-按月</div></div>
+                        <div class="info-row"><div class="info-label">度量:</div><div class="info-value"><span class="diff-modified">数值</span></div></div>
+                        <div class="info-row">
+                            <div class="info-label">维度:</div>
+                            <div class="info-value">
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">客户(文本)</span>
+                                <span style="background: #f0f5ff; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-right: 5px;">授信开始时间(时间)</span>
+                            </div>
+                        </div>
+                        <div class="info-row">
+                            <div class="info-label">筛选:</div>
+                            <div style="flex-grow: 1;">
+                                <table style="font-size: 12px;">
+                                    <thead><tr><th>维度名</th><th>数据类型</th><th>筛选值</th></tr></thead>
+                                    <tbody><tr><td colspan="3" style="text-align: center; color: #999;">暂无数据</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="info-row"><div class="info-label">时间:</div><div class="info-value">授信开始时间(时间)</div></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function showSnapshot() {
+            document.getElementById('listView').style.display = 'none';
+            document.getElementById('snapshotView').style.display = 'flex';
+        }
+
+        function backToList() {
+            document.getElementById('snapshotView').style.display = 'none';
+            document.getElementById('listView').style.display = 'block';
+        }
+
+        document.getElementById('btnCompare').onclick = function() {
+            document.getElementById('compareOverlay').style.display = 'flex';
+        };
+
+        function exitCompare() {
+            document.getElementById('compareOverlay').style.display = 'none';
+        }
+
+        // Restore Version Logic
+        const btnRestore = document.getElementById('btnRestore');
+        const restorePopover = document.getElementById('restorePopover');
+        const btnCancelRestore = document.getElementById('btnCancelRestore');
+        const btnConfirmRestore = document.getElementById('btnConfirmRestore');
+
+        btnRestore.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const rect = btnRestore.getBoundingClientRect();
+            const parentRect = btnRestore.parentElement.getBoundingClientRect();
+            
+            // Position popover under the button
+            restorePopover.style.top = (rect.bottom - parentRect.top + 10) + 'px';
+            restorePopover.style.left = (rect.left - parentRect.left + rect.width/2 - 90) + 'px';
+            
+            restorePopover.style.display = restorePopover.style.display === 'flex' ? 'none' : 'flex';
+        });
+
+        btnCancelRestore.addEventListener('click', () => {
+            restorePopover.style.display = 'none';
+        });
+
+        btnConfirmRestore.addEventListener('click', () => {
+            alert('已恢复到该版本');
+            restorePopover.style.display = 'none';
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!restorePopover.contains(e.target) && e.target !== btnRestore) {
+                restorePopover.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>
