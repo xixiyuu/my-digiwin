@@ -189,6 +189,11 @@
             text-decoration: none;
         }
 
+        .link-action.disabled {
+            color: #ccc;
+            cursor: not-allowed;
+        }
+
         /* Snapshot View */
         .snapshot-view {
             display: none;
@@ -486,6 +491,7 @@
                                 <th>发布人</th>
                                 <th>发布时间</th>
                                 <th>版本快照</th>
+                                <th>版本恢复</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -494,18 +500,21 @@
                                 <td>王文娟</td>
                                 <td>2026.03.30 17:29:05</td>
                                 <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                                <td><span class="link-action disabled">恢复</span></td>
                             </tr>
                             <tr>
                                 <td>V2</td>
                                 <td>王文娟</td>
                                 <td>2026.03.30 10:59:26</td>
                                 <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                                <td><span class="link-action" onclick="restoreVersion('V2')">恢复</span></td>
                             </tr>
                             <tr>
                                 <td>V1</td>
                                 <td>王文娟</td>
                                 <td>2026.03.30 10:58:28</td>
                                 <td><span class="link-action" onclick="showSnapshot()">查看</span></td>
+                                <td><span class="link-action" onclick="restoreVersion('V1')">恢复</span></td>
                             </tr>
                         </tbody>
                     </table>
@@ -724,6 +733,12 @@
         function backToList() {
             document.getElementById('snapshotView').style.display = 'none';
             document.getElementById('listView').style.display = 'block';
+        }
+
+        function restoreVersion(version) {
+            if (confirm(`确认要恢复到版本 ${version} 吗？`)) {
+                alert(`已恢复到版本 ${version}`);
+            }
         }
 
         document.getElementById('btnCompare').onclick = function() {
