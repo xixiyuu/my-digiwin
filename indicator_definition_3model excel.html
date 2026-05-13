@@ -859,6 +859,118 @@
             margin-top: 5px;
         }
 
+        /* Scheduling Styles */
+        .scheduling-modes {
+            display: flex;
+            gap: 24px;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 4px;
+        }
+
+        .mode-item {
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .mode-item input[type="radio"] {
+            margin-right: 8px;
+            cursor: pointer;
+        }
+
+        .scheduling-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 20px;
+            display: none; /* Hidden by default */
+        }
+
+        .scheduling-grid.active {
+            display: grid;
+        }
+
+        .scheduling-card {
+            background: #fff;
+            border: 1px solid #f0f0f0;
+            border-radius: 4px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.02);
+        }
+
+        .card-header {
+            background-color: #f0f0ff; /* Light purple header */
+            padding: 8px 16px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #333;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .card-body {
+            padding: 16px;
+        }
+
+        .freq-row {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .freq-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .freq-input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-grow: 1;
+        }
+
+        .freq-input-group span {
+            color: #666;
+            white-space: nowrap;
+        }
+
+        .short-input {
+            width: 150px !important;
+            flex-grow: 0 !important;
+            height: 32px !important;
+        }
+
+        .very-short-input {
+            width: 60px !important;
+            flex-grow: 0 !important;
+            height: 32px !important;
+        }
+
+        .next-run-times {
+            grid-column: span 2;
+            margin-top: 10px;
+            padding: 12px;
+            font-size: 13px;
+            color: #666;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .run-time-tag {
+            background: #f0f5ff;
+            color: var(--brand-blue);
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
         /* SVG Icon Styling */
         .icon {
             display: inline-block;
@@ -1020,6 +1132,10 @@
                     <div class="step" data-target="section4">
                         <span class="step-number">4</span>
                         <span>指标试计算</span>
+                    </div>
+                    <div class="step" data-target="section5">
+                        <span class="step-number">5</span>
+                        <span>指标调度</span>
                     </div>
                 </div>
                 <div class="action-tags">
@@ -1266,6 +1382,209 @@
                             </div>
                         </div>
                     </section>
+
+                    <!-- Section 5: 指标调度 -->
+                    <section id="section5">
+                        <h3 class="section-title">指标调度</h3>
+                        <div class="form-card">
+                            <!-- 计算模式选择 -->
+                            <div class="scheduling-modes">
+                                <label class="mode-item">
+                                    <input type="radio" name="calcMode" value="realtime" checked> 实时计算
+                                </label>
+                                <label class="mode-item">
+                                    <input type="radio" name="calcMode" value="periodic"> 周期计算
+                                </label>
+                            </div>
+
+                            <!-- 周期计算配置 (全展开网格布局) -->
+                            <div class="scheduling-grid" id="periodicConfig">
+                                <!-- 年配置 -->
+                                <div class="scheduling-card">
+                                    <div class="card-header">年</div>
+                                    <div class="card-body">
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="yearType" checked> 每年</label>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="yearType"> 在</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control short-input" placeholder="请选择日期">
+                                                <span>年，每年执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="yearType"> 从</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control very-short-input" placeholder="2024">
+                                                <span>年开始，每隔</span>
+                                                <input type="number" class="form-control very-short-input" value="1">
+                                                <span>年执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="yearType"> 指定</label>
+                                            <div class="freq-input-group">
+                                                <select class="form-control" multiple style="height: 32px;">
+                                                    <option>可多选</option>
+                                                </select>
+                                                <span>年</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 月配置 -->
+                                <div class="scheduling-card">
+                                    <div class="card-header">月</div>
+                                    <div class="card-body">
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="monthType" checked> 每月</label>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="monthType"> 在</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control short-input" placeholder="请选择日期">
+                                                <span>月，每月执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="monthType"> 从</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control very-short-input" placeholder="1">
+                                                <span>月开始，每隔</span>
+                                                <input type="number" class="form-control very-short-input" value="1">
+                                                <span>月执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="monthType"> 指定</label>
+                                            <div class="freq-input-group">
+                                                <select class="form-control" multiple style="height: 32px;">
+                                                    <option>可多选</option>
+                                                </select>
+                                                <span>月</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 周配置 -->
+                                <div class="scheduling-card">
+                                    <div class="card-header">周</div>
+                                    <div class="card-body">
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="weekType" checked> 每周</label>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="weekType"> 在周</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control short-input" placeholder="请选择星期">
+                                                <span>执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="weekType"> 从周</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control very-short-input" placeholder="一">
+                                                <span>开始，每隔</span>
+                                                <input type="number" class="form-control very-short-input" value="1">
+                                                <span>天执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="weekType"> 指定</label>
+                                            <div class="freq-input-group">
+                                                <select class="form-control" multiple style="height: 32px;">
+                                                    <option>可多选</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 日配置 -->
+                                <div class="scheduling-card">
+                                    <div class="card-header">日</div>
+                                    <div class="card-body">
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="dayType" checked> 每日</label>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="dayType"> 在</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control short-input" placeholder="请选择日期">
+                                                <span>日，每日执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="dayType"> 本月</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control very-short-input" placeholder="1">
+                                                <span>号开始，每隔</span>
+                                                <input type="number" class="form-control very-short-input" value="1">
+                                                <span>日执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="dayType"> 指定</label>
+                                            <div class="freq-input-group">
+                                                <select class="form-control" multiple style="height: 32px;">
+                                                    <option>可多选</option>
+                                                </select>
+                                                <span>号</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 时配置 -->
+                                <div class="scheduling-card">
+                                    <div class="card-header">时</div>
+                                    <div class="card-body">
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="hourType" checked> 每时</label>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="hourType"> 在</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control short-input" placeholder="请选择时间">
+                                                <span>时，每时执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="hourType"> 从</label>
+                                            <div class="freq-input-group">
+                                                <input type="text" class="form-control very-short-input" placeholder="0">
+                                                <span>时开始，每隔</span>
+                                                <input type="number" class="form-control very-short-input" value="1">
+                                                <span>时执行一次</span>
+                                            </div>
+                                        </div>
+                                        <div class="freq-row">
+                                            <label class="mode-item"><input type="radio" name="hourType"> 指定</label>
+                                            <div class="freq-input-group">
+                                                <select class="form-control" multiple style="height: 32px;">
+                                                    <option>可多选</option>
+                                                </select>
+                                                <span>时</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- 预计未来五次更新时间 -->
+                                <div class="next-run-times">
+                                    <span>预计未来五次更新时间:</span>
+                                    <span class="run-time-tag">2026-05-13 11:00</span>
+                                    <span class="run-time-tag">2026-05-13 12:00</span>
+                                    <span class="run-time-tag">2026-05-13 13:00</span>
+                                    <span class="run-time-tag">2026-05-13 14:00</span>
+                                    <span class="run-time-tag">2026-05-13 15:00</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
                 </div>
             </main>
         </div>
@@ -1433,6 +1752,20 @@
                     const text = this.querySelector('span:not(.tag-model)').innerText;
                     dataSetInput.querySelector('.value').innerText = text;
                     searchDropdown.style.display = 'none';
+                });
+            });
+
+            // Scheduling Logic
+            const calcModeRadios = document.querySelectorAll('input[name="calcMode"]');
+            const periodicConfig = document.getElementById('periodicConfig');
+
+            calcModeRadios.forEach(radio => {
+                radio.addEventListener('change', () => {
+                    if (radio.value === 'periodic') {
+                        periodicConfig.classList.add('active');
+                    } else {
+                        periodicConfig.classList.remove('active');
+                    }
                 });
             });
         });
